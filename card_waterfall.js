@@ -46,11 +46,12 @@ function getSign(senddata){
 	//console.log(md5str);
 	return md5str;
 }
-function getRandStr(num){
+function getRandStr(type){
 	var str="OSEN";
-	var num=Math.round(Math.random(8)*100000000);
+	var num=Math.round(Math.random()*1000000);
 	var date=new Date();
 	str+=date.getUTCFullYear()+""+(date.getUTCMonth()+1)+""+date.getUTCDate();
+	str+=type;
 	str+=num.toString();
 	//console.log(str);
 	return str;
@@ -66,10 +67,15 @@ function getSenddata(type,param1,param2){
 		senddata['iccid']=param1;
 		senddata['packageInfo']=param2;
 	}else{
-		if(type=='mainpackageorder' || type=='packageorder'){
+		if(type=='mainpackageorder' ){
 			senddata['iccid']=param1;
 			senddata['packageInfo']=param2;
-			senddata['ordernum']=getRandNum(20);
+			senddata['ordernum']=getRandStr('MO');
+		}
+		if(type=='packageorder'){
+			senddata['iccid']=param1;
+			senddata['packageInfo']=param2;
+			senddata['ordernum']=getRandStr('PO');	
 		}
 		if(type=='packageorder'){
 			senddata['activeTime']=1;
@@ -202,12 +208,12 @@ function postReq(){
 		},
 		function (arg2,callback){
 			console.log("#############");
-			//console.log(arg2);
+			console.log(arg2);
 
 			async.mapSeries(arg2,function(item,callback1){
 				expire_iccids=item['expire_iccids'];
 				outofdata_iccids=item['outofdata_iccids'];
-				var card;
+				
 
 				if (outofdata_iccids.length>0){
 					async.mapSeries(outofdata_iccids,function(iccid,callback2){
@@ -235,20 +241,37 @@ function postReq(){
 							},
 							function(arg1,arg2,callback3){
 								if(arg2==0){																
-									request.post(urls['packageorder'],{json :getSenddata('packageorder',iccid['iccid'],arg1)
+									request.post(urls['packageorder'],{json :getSenddata('packageorder',iccid['iccid'],"")
 									},function(error4,response4,body4){	
-										console.log(body4);			
+										console.log(body4);
+										callback3(null,"");										
 									})
-								}
-								callback3(null,"");
+								}else{
+									callback3(null,"");
+								}				
 							},													
-						],function(err4,result4){							
+						],function(err4,result4){	
+							callback2(null,"");								
 						})	
-						callback2(null,"");						
+						//console.log(iccid);
+						//callback2(null,"");					
 					},function(err3,result3){
+						console.log(result3);
+						callback1(null,"---");			
 					});
-				}
-				
+				}else{
+					callback1(null,"---");	
+				}				
+			},function(err2,result2){
+				console.log(result2);
+				callback(null,arg2);	
+			});	
+		},	
+		
+
+		function (arg2,callback){
+			async.mapSeries(arg2,function(item,callback1){
+				expire_iccids=item['expire_iccids'];
 				if (expire_iccids.length>0){
 					console.log(expire_iccids);
 					console.log(expire_iccids.length);
@@ -267,36 +290,36 @@ function postReq(){
 									callback5(null,packcode);
 								})
 							},
-							function(arg1,callback5){
-								console.log('b');
-								//callback5(null,'b','c')
-								request.post(urls['canrecharge'],{json :getSenddata('canrecharge',expire_iccid,arg1)
-								},function(error6,response6,body6){
-									console.log('body6');
-									console.log(body6);
-									if(body6['code']==0){
-										callback5(null,arg1,body6['code']);
-									}else{
-										callback5(null,"",body6['code']);
-									}
-								})
-							},
-							function(arg1,arg2,callback5){
-								console.log('c');
-								//callback5(null,'d')
+							// function(arg1,callback5){
+								// console.log('b');
+								// //callback5(null,'b','c')
+								// request.post(urls['canrecharge'],{json :getSenddata('canrecharge',expire_iccid,arg1)
+								// },function(error6,response6,body6){
+									// console.log('body6');
+									// console.log(body6);
+									// if(body6['code']==0){
+										// callback5(null,arg1,body6['code']);
+									// }else{
+										// callback5(null,"",body6['code']);
+									// }
+								// })
+							// },
+							// function(arg1,arg2,callback5){
+								// console.log('c');
+								// //callback5(null,'d')
 
-								console.log(arg1);	
-								if(arg2==0){
-									request.post(urls['mainpackageorder'],{json :getSenddata('mainpackageorder',expire_iccid,getRandStr())
-									},function(error7,response7,body7){	
-										console.log('body7');
-										console.log(body7);
-										callback5(null,"");
-									})	
-								}else{
-									callback5(null,"");	
-								}
-							},													
+								// console.log(arg1);	
+								// if(arg2==0){
+									// request.post(urls['mainpackageorder'],{json :getSenddata('mainpackageorder',expire_iccid,"")
+									// },function(error7,response7,body7){	
+										// console.log('body7');
+										// console.log(body7);
+										// callback5(null,"");
+									// })	
+								// }else{
+									// callback5(null,"");	
+								// }
+							// },													
 						],function(err6,result6){	
 							callback4(null,"");
 						})
@@ -308,10 +331,10 @@ function postReq(){
 				
 				
 			},function(err2,result2){
-				
+				callback(null,"");
 			});
-			callback(null,"");
-		}
+			
+		},
 	], function (err, result) {
 		if(err){
 			console.log('¥¶¿Ì¥ÌŒÛ!');
@@ -326,6 +349,6 @@ function postReq(){
 }
 
 //console.log(urls['cardcount']);
-//postReq('');
-getRandNum();
+postReq('');
+//getRandStr('PO');
 				
